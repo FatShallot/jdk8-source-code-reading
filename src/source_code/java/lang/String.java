@@ -113,15 +113,17 @@ import java.util.regex.PatternSyntaxException;
  */
 public final class String
         implements java.io.Serializable, Comparable<String>, CharSequence {
-    /** The value is used for character storage. */
     /**
+     * The value is used for character storage.
+     * <p>
      * 保存字符串实际值的字符数组
      * final 类型，不可变的原因就是这个
      */
     private final char value[];
 
-    /** Cache the hash code for the string */
     /**
+     * Cache the hash code for the string
+     * <p>
      * 将字符串的 hash 值保存下来
      */
     private int hash; // Default to 0
@@ -147,7 +149,6 @@ public final class String
      * unnecessary since Strings are immutable.
      * <p>
      * 构造函数初始化的时候是一个空字符串
-     * new String()
      */
     public String() {
         this.value = "".value;
@@ -580,6 +581,7 @@ public final class String
      */
     public boolean isEmpty() {
         // 判空就是判断字符数组的长度是不是 0
+        // 也就是说当字符串为 null 时，调用这个方法是会抛出空指针异常的
         return value.length == 0;
     }
 
@@ -1215,7 +1217,7 @@ public final class String
      * {@code this.charAt(toffset + }<i>k</i>{@code ) != other.charAt(ooffset + }
      * <i>k</i>{@code )}
      * </ul>
-     *
+     * <p>
      * 为什么不调用它的重载方法？
      *
      * @param toffset the starting offset of the subregion in this string.
@@ -1347,8 +1349,8 @@ public final class String
     /**
      * Tests if the substring of this string beginning at the
      * specified index starts with the specified prefix.
-     *
-     * todo 从这个方法接下去看
+     * <p>
+     * 判断字符串是否以某个子串开头
      *
      * @param prefix  the prefix.
      * @param toffset where to begin looking in this string.
@@ -1430,7 +1432,7 @@ public final class String
         int h = hash;
         if (h == 0 && value.length > 0) {
             char val[] = value;
-
+            // 为什么是 31？
             for (int i = 0; i < value.length; i++) {
                 h = 31 * h + val[i];
             }
@@ -1498,6 +1500,9 @@ public final class String
      *
      * <p>All indices are specified in {@code char} values
      * (Unicode code units).
+     * <p>
+     * <p>
+     * 查询子串的开始位置
      *
      * @param ch        a character (Unicode code point).
      * @param fromIndex the index to start the search from.
@@ -1507,18 +1512,29 @@ public final class String
      * if the character does not occur.
      */
     public int indexOf(int ch, int fromIndex) {
+        // max 的值就是字符数组的长度
         final int max = value.length;
         if (fromIndex < 0) {
+            // 如果 fromIndex 传入了负值，直接设为 0
             fromIndex = 0;
         } else if (fromIndex >= max) {
             // Note: fromIndex might be near -1>>>1.
+            // 如果 fromIndex 超过了字符数组长度，没必要查，直接返回 -1
             return -1;
         }
 
+        // SUPPLEMENTARY 补充的；追加的
+        // public static final int MIN_SUPPLEMENTARY_CODE_POINT = 0x010000;
+        // 这个值的意义可以去 Character 类里看
         if (ch < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             // handle most cases here (ch is a BMP code point or a
             // negative value (invalid code point))
+            // 包含了大多数情况（参数 ch 是一个 BMP code point，或一个负值（即无效的 code point））
+            // 不知道 code point 是什么意思
+
+            // 为什么要复制给一个局部变量再操作，这样浅拷贝，要修改不是还是一起改了？源码里好多地方这样写！
             final char[] value = this.value;
+            // 从 formIndex 到 max 逐一比较字符，搜索到就返回索引，搜索不到返回 -1
             for (int i = fromIndex; i < max; i++) {
                 if (value[i] == ch) {
                     return i;
@@ -1526,18 +1542,24 @@ public final class String
             }
             return -1;
         } else {
+            // 不理解增补字符是什么，这里跳过
             return indexOfSupplementary(ch, fromIndex);
         }
     }
 
     /**
      * Handles (rare) calls of indexOf with a supplementary character.
+     * 处理（少部分的）对于增补字符的索引的查询方法的调用
+     * 意思是查询增补字符是少数的情况
+     * <p>
+     * 跳过
      */
     private int indexOfSupplementary(int ch, int fromIndex) {
         if (Character.isValidCodePoint(ch)) {
             final char[] value = this.value;
             final char hi = Character.highSurrogate(ch);
             final char lo = Character.lowSurrogate(ch);
+            // 为什么要减 1
             final int max = value.length - 1;
             for (int i = fromIndex; i < max; i++) {
                 if (value[i] == hi && value[i + 1] == lo) {
@@ -1615,6 +1637,7 @@ public final class String
             // negative value (invalid code point))
             final char[] value = this.value;
             int i = Math.min(fromIndex, value.length - 1);
+            // 跟 indexOf() 方法差不多，只是这个方法是从后往前遍历
             for (; i >= 0; i--) {
                 if (value[i] == ch) {
                     return i;
@@ -1628,6 +1651,7 @@ public final class String
 
     /**
      * Handles (rare) calls of lastIndexOf with a supplementary character.
+     * 跳过
      */
     private int lastIndexOfSupplementary(int ch, int fromIndex) {
         if (Character.isValidCodePoint(ch)) {
@@ -1679,6 +1703,7 @@ public final class String
      * or {@code -1} if there is no such occurrence.
      */
     public int indexOf(String str, int fromIndex) {
+        // 调用重载方法
         return indexOf(value, 0, value.length,
                 str.value, 0, str.value.length, fromIndex);
     }
@@ -1705,14 +1730,21 @@ public final class String
      * Code shared by String and StringBuffer to do searches. The
      * source is the character array being searched, and the target
      * is the string being searched for.
+     * <p>
+     * offset 是起点
+     * count 是终点，还是长度？感觉是长度，用 count
+     * source 是调用方法的字符串，一般来说就是较长
+     * target 是子串
      *
      * @param source       the characters being searched.
+     *                     调用方法的那个字符串
      * @param sourceOffset offset of the source string.
      * @param sourceCount  count of the source string.
      * @param target       the characters being searched for.
      * @param targetOffset offset of the target string.
      * @param targetCount  count of the target string.
      * @param fromIndex    the index to begin searching from.
+     *                     这个参数是干嘛用的，如果表示起点的偏移量，为什么不干脆加在 sourceOffset 上
      */
     static int indexOf(char[] source, int sourceOffset, int sourceCount,
                        char[] target, int targetOffset, int targetCount,
@@ -1726,13 +1758,17 @@ public final class String
         if (targetCount == 0) {
             return fromIndex;
         }
-
+        // 子串的第一个字符
         char first = target[targetOffset];
+        // 需要检测的源字符数组的最大开始位置
         int max = sourceOffset + (sourceCount - targetCount);
 
         for (int i = sourceOffset + fromIndex; i <= max; i++) {
             /* Look for first character. */
+            // 在源串里找子串的第一个字符的位置
             if (source[i] != first) {
+                // 先判断源串里的 i 位是不是 first
+                // 不是，用一个 while 循环继续找
                 while (++i <= max && source[i] != first) ;
             }
 

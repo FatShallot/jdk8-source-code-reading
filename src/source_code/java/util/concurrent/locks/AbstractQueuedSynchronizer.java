@@ -557,7 +557,9 @@ public abstract class AbstractQueuedSynchronizer
      * and write.
      *
      * @param expect the expected value
+     *               变量的预期值
      * @param update the new value
+     *               要给变量设置的新值
      * @return {@code true} if successful. False return indicates that the actual
      *         value was not equal to the expected value.
      */
